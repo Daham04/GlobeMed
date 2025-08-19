@@ -107,6 +107,9 @@ class RoleHandler extends AuthenticationHandler {
                     break;
                 case "Admin":
                     System.out.println("Loading Admin Dashboard...");
+                    break;    
+                case "Pharmacist":
+                    System.out.println("Loading Pharmacist Dashboard...");
                     break;
                 default:
                     System.out.println("❌ Unknown Role!");
