@@ -6,11 +6,12 @@ import java.sql.ResultSet;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import model.MySQL;
+import model.UserBean;
 
 abstract class AuthenticationHandler {
 
     protected AuthenticationHandler next;
-  
+
     public void setNext(AuthenticationHandler next) {
         this.next = next;
     }
@@ -40,8 +41,9 @@ class FieldsHandler extends AuthenticationHandler {
 }
 
 class UserExistsHandler extends AuthenticationHandler {
-    
+
     protected String role;
+    public static UserBean userBean;
 
     public String getRole() {
         return role;
@@ -61,6 +63,13 @@ class UserExistsHandler extends AuthenticationHandler {
 
             if (resultSet.next()) {
                 setRole(resultSet.getString("staff_role.role"));
+                userBean = new UserBean();
+                userBean.setId(resultSet.getInt("id"));
+                userBean.setFname(resultSet.getString("first_name"));
+                userBean.setLname(resultSet.getString("last_name"));
+                userBean.setUsername(resultSet.getString("username"));
+                userBean.setMobile(resultSet.getString("mobile"));
+                userBean.setUserRole(resultSet.getString("staff_role.role"));
                 return (next != null) ? next.handle(username, password) : true;
             } else {
                 JOptionPane.showMessageDialog(
@@ -85,34 +94,39 @@ class UserExistsHandler extends AuthenticationHandler {
 }
 
 class RoleHandler extends AuthenticationHandler {
-    
+
     private UserExistsHandler userHandler;
-    
-    public RoleHandler(UserExistsHandler userHandler) {
+    private SignIn signIn;
+
+    public RoleHandler(UserExistsHandler userHandler, SignIn signIn) {
         this.userHandler = userHandler;
+        this.signIn = signIn;
     }
 
     @Override
     public boolean handle(String username, String password) {
-        
+
         String userRoll = userHandler.getRole();
         System.out.println(userRoll);
         if (!userRoll.isEmpty()) {
             switch (userRoll) {
                 case "Doctor":
-                    System.out.println("Loading Doctor Dashboard...");
+                    Dashboard dashboard = new Dashboard();
+                    dashboard.setUserBean(UserExistsHandler.userBean);
+                    dashboard.setVisible(true);
+                    signIn.dispose();
                     break;
                 case "Nurse":
                     System.out.println("Loading Nurse Dashboard...");
                     break;
                 case "Admin":
                     System.out.println("Loading Admin Dashboard...");
-                    break;    
+                    break;
                 case "Pharmacist":
                     System.out.println("Loading Pharmacist Dashboard...");
                     break;
                 default:
-                    System.out.println("❌ Unknown Role!");
+                    System.out.println("Unknown Role!");
                     return false;
             }
             return true;
@@ -227,6 +241,11 @@ public class SignIn extends javax.swing.JFrame {
         jButton2.setBackground(new java.awt.Color(239, 239, 236));
         jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/close.png"))); // NOI18N
         jButton2.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -278,7 +297,7 @@ public class SignIn extends javax.swing.JFrame {
 
         AuthenticationHandler fieldsChecker = new FieldsHandler();
         AuthenticationHandler userCheker = new UserExistsHandler();
-        AuthenticationHandler roleCheker = new RoleHandler((UserExistsHandler) userCheker);
+        AuthenticationHandler roleCheker = new RoleHandler((UserExistsHandler) userCheker, this);
 
         fieldsChecker.setNext(userCheker);
         userCheker.setNext(roleCheker);
@@ -286,9 +305,14 @@ public class SignIn extends javax.swing.JFrame {
         fieldsChecker.handle(username, password);
         jTextField1.setText("");
         jPasswordField1.setText("");
-        
+
         jTextField1.grabFocus();
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        System.exit(0);
+    }//GEN-LAST:event_jButton2ActionPerformed
 
     public static void main(String args[]) {
         FlatLightLaf.setup();
