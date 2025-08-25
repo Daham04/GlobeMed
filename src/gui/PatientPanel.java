@@ -74,17 +74,17 @@ public class PatientPanel extends javax.swing.JPanel {
         jTable1.setForeground(new java.awt.Color(33, 52, 72));
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Patient Nic", "First Name", "Last Name", "Gender", "Mobile", "Email", "dob", "Addres Line1", "Addres Line2"
+                "Patient Nic", "First Name", "Last Name", "Gender", "Mobile", "Age", "Addres Line1", "Addres Line2"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
