@@ -73,17 +73,17 @@ public class AppointmentPanel extends javax.swing.JPanel {
         jTable4.setForeground(new java.awt.Color(33, 52, 72));
         jTable4.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "Patient Nic", "First Name", "Last Name", "Gender", "Mobile", "Email", "dob", "Addres Line1", "Addres Line2"
+                "ID", "Patient Nic", "Doctor", "Date", "Notes", "Hospital", "Time Slot"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
