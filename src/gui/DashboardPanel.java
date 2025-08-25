@@ -46,7 +46,7 @@ public class DashboardPanel extends javax.swing.JPanel {
         setBackground(new java.awt.Color(239, 239, 236));
         setPreferredSize(new java.awt.Dimension(1058, 685));
 
-        jPanel3.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel3.setBackground(new java.awt.Color(239, 239, 236));
         jPanel3.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(217, 210, 233), 2, true));
 
         jLabel7.setFont(new java.awt.Font("Bahnschrift", 1, 18)); // NOI18N
@@ -89,7 +89,7 @@ public class DashboardPanel extends javax.swing.JPanel {
                 .addGap(30, 30, 30))
         );
 
-        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel2.setBackground(new java.awt.Color(239, 239, 236));
         jPanel2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(217, 210, 233), 2, true));
 
         jLabel4.setFont(new java.awt.Font("Bahnschrift", 1, 18)); // NOI18N
@@ -131,7 +131,7 @@ public class DashboardPanel extends javax.swing.JPanel {
                 .addGap(30, 30, 30))
         );
 
-        jPanel1.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel1.setBackground(new java.awt.Color(239, 239, 236));
         jPanel1.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(217, 210, 233), 2, true));
 
         jLabel1.setFont(new java.awt.Font("Bahnschrift", 1, 18)); // NOI18N
@@ -195,6 +195,7 @@ public class DashboardPanel extends javax.swing.JPanel {
         });
 
         jTable1.setBackground(new java.awt.Color(239, 239, 236));
+        jTable1.setFont(new java.awt.Font("Bahnschrift", 0, 12)); // NOI18N
         jTable1.setForeground(new java.awt.Color(33, 52, 72));
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
