@@ -10,7 +10,7 @@ import javax.swing.JFrame;
  *
  * @author Daham Bnadara
  */
-public class AddPatientPanel extends javax.swing.JDialog {
+public class AddPatientPanel extends javax.swing.JFrame {
 
     /**
      * Creates new form NewJFrame
