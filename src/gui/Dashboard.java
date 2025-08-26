@@ -2,9 +2,12 @@ package gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.BorderLayout;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import model.UserBean;
 
 abstract class AccessHandler {
@@ -137,7 +140,23 @@ public class Dashboard extends javax.swing.JFrame {
 
     public Dashboard() {
         initComponents();
+        startDateTimeUpdater();
     }
+    
+    private void startDateTimeUpdater() {
+    // Timer to refresh every second
+        Timer timer = new Timer(1000, e -> {
+            LocalDateTime now = LocalDateTime.now();
+
+        // Formatters
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE dd MMM, yyyy"); 
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("hh:mm:ss a");
+
+        jLabel7.setText(now.format(dateFormat));
+        jLabel8.setText(now.format(timeFormat));
+    });
+    timer.start();
+}
 
     public void updateDasboardPanel() {
         jPanel4.removeAll();
@@ -287,14 +306,12 @@ public class Dashboard extends javax.swing.JFrame {
         jLabel7.setFont(new java.awt.Font("Bahnschrift", 0, 13)); // NOI18N
         jLabel7.setForeground(new java.awt.Color(239, 239, 236));
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel7.setText("Wed 23 Jan, 2024 ");
         jLabel7.setOpaque(true);
 
         jLabel8.setBackground(new java.awt.Color(33, 52, 72));
         jLabel8.setFont(new java.awt.Font("Bahnschrift", 0, 13)); // NOI18N
         jLabel8.setForeground(new java.awt.Color(239, 239, 236));
         jLabel8.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel8.setText("04: 51: 23 PM");
         jLabel8.setOpaque(true);
 
         jToggleButton2.setBackground(new java.awt.Color(239, 239, 236));

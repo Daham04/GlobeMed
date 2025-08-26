@@ -4,6 +4,7 @@ import com.mysql.cj.protocol.Resultset;
 import model.MySQL;
 import java.sql.ResultSet;
 import java.util.Vector;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import model.UserBean;
 
@@ -12,7 +13,7 @@ import model.UserBean;
  * @author Daham Bnadara
  */
 public class DashboardPanel extends javax.swing.JPanel {
-    
+
     private UserBean userBean;
 
     public DashboardPanel(UserBean userBean) {
@@ -20,7 +21,7 @@ public class DashboardPanel extends javax.swing.JPanel {
         initComponents();
         loadAppointments();
     }
-    
+
     public void loadAppointments() {
         try {
             ResultSet appointmentSet = MySQL.execute("SELECT * FROM `appointment`"
@@ -36,17 +37,27 @@ public class DashboardPanel extends javax.swing.JPanel {
 
             DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
-            
-             while (appointmentSet.next()) {
+
+            int totalCount = 0;
+            int completedCount = 0;
+            int upcomingCount = 0;
+
+            while (appointmentSet.next()) {
                 String appoinmentId = appointmentSet.getString("appointment.id");
                 String patientNIC = appointmentSet.getString("patient.patient_nic");
-                String patientName = appointmentSet.getString("patient.first_name") +" "+ appointmentSet.getString("patient.last_name");
+                String patientName = appointmentSet.getString("patient.first_name") + " " + appointmentSet.getString("patient.last_name");
                 String appoinmentDate = appointmentSet.getString("appointment.appointment_date");
                 String appoinmentTime = appointmentSet.getString("time_slot.time");
                 String appoinmentCenter = appointmentSet.getString("hospital.hospital");
                 String appoinmentNotes = appointmentSet.getString("appointment.notes");
                 String appoinmentStatus = appointmentSet.getString("appointment_status.status");
-          
+
+                totalCount++;
+                if ("Confirmed".equalsIgnoreCase(appoinmentStatus)) {
+                    completedCount++;
+                } else if ("Pending".equalsIgnoreCase(appoinmentStatus)) {
+                    upcomingCount++;
+                }
 
                 Vector vector = new Vector();
                 vector.add(appoinmentId);
@@ -60,6 +71,10 @@ public class DashboardPanel extends javax.swing.JPanel {
 
                 model.addRow(vector);
                 jTable1.setModel(model);
+
+                jLabel13.setText(String.valueOf(totalCount));
+                jLabel16.setText(String.valueOf(upcomingCount));
+                jLabel2.setText(String.valueOf(completedCount));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -198,7 +213,7 @@ public class DashboardPanel extends javax.swing.JPanel {
         jLabel15.setFont(new java.awt.Font("Bahnschrift", 1, 18)); // NOI18N
         jLabel15.setForeground(new java.awt.Color(33, 52, 72));
         jLabel15.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel15.setText("Completes Appointments");
+        jLabel15.setText("Upcoming Appointments");
 
         jLabel16.setFont(new java.awt.Font("Bahnschrift", 1, 18)); // NOI18N
         jLabel16.setForeground(new java.awt.Color(33, 52, 72));
@@ -344,7 +359,19 @@ public class DashboardPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        String appID = jTextField1.getText().trim();
 
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        for (int i = 0; i < model.getRowCount(); i++) {
+            String tableAppID = model.getValueAt(i, 0).toString(); // AppID is column 0
+            if (tableAppID.equals(appID)) {
+                jTable1.setRowSelectionInterval(i, i); // highlight row
+                jTable1.scrollRectToVisible(jTable1.getCellRect(i, 0, true)); // scroll to it
+                return;
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, "Appointment ID not found.","Warning",JOptionPane.WARNING_MESSAGE);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed

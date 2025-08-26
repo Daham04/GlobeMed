@@ -290,7 +290,6 @@
               <Color blue="ec" green="ef" red="ef" type="rgb"/>
             </Property>
             <Property name="horizontalAlignment" type="int" value="0"/>
-            <Property name="text" type="java.lang.String" value="Wed 23 Jan, 2024 "/>
             <Property name="opaque" type="boolean" value="true"/>
           </Properties>
         </Component>
@@ -306,7 +305,6 @@
               <Color blue="ec" green="ef" red="ef" type="rgb"/>
             </Property>
             <Property name="horizontalAlignment" type="int" value="0"/>
-            <Property name="text" type="java.lang.String" value="04: 51: 23 PM"/>
             <Property name="opaque" type="boolean" value="true"/>
           </Properties>
         </Component>

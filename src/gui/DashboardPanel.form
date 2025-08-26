@@ -286,7 +286,7 @@
                   <Color blue="48" green="34" red="21" type="rgb"/>
                 </Property>
                 <Property name="horizontalAlignment" type="int" value="0"/>
-                <Property name="text" type="java.lang.String" value="Completes Appointments"/>
+                <Property name="text" type="java.lang.String" value="Upcoming Appointments"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel16">
