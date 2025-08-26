@@ -54,12 +54,14 @@
               <Component id="kGradientPanel2" min="-2" max="-2" attributes="0"/>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                  <Group type="103" alignment="0" groupAlignment="3" attributes="0">
-                      <Component id="jTextField2" alignment="3" min="-2" pref="38" max="-2" attributes="0"/>
-                      <Component id="jLabel8" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="jLabel10" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="jButton1" alignment="3" min="-2" pref="43" max="-2" attributes="0"/>
+                  <Group type="103" alignment="0" groupAlignment="0" attributes="0">
                       <Component id="jButton2" alignment="1" min="-2" pref="43" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="jTextField2" alignment="3" min="-2" pref="38" max="-2" attributes="0"/>
+                          <Component id="jLabel8" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="jLabel10" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="jButton1" alignment="3" min="-2" pref="43" max="-2" attributes="0"/>
+                      </Group>
                   </Group>
                   <Component id="jDateChooser1" min="-2" pref="43" max="-2" attributes="0"/>
               </Group>
@@ -165,8 +167,8 @@
                 <Column editable="false" title="Patient Nic" type="java.lang.Object"/>
                 <Column editable="false" title="Doctor" type="java.lang.Object"/>
                 <Column editable="false" title="Date" type="java.lang.Object"/>
+                <Column editable="false" title="Center" type="java.lang.Object"/>
                 <Column editable="false" title="Notes" type="java.lang.Object"/>
-                <Column editable="false" title="Hospital" type="java.lang.Object"/>
                 <Column editable="false" title="Time Slot" type="java.lang.Object"/>
               </Table>
             </Property>

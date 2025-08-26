@@ -111,19 +111,28 @@ class RoleHandler extends AuthenticationHandler {
         if (!userRoll.isEmpty()) {
             switch (userRoll) {
                 case "Doctor":
-                    Dashboard dashboard = new Dashboard();
-                    dashboard.setUserBean(UserExistsHandler.userBean);
-                    dashboard.setVisible(true);
+                    Dashboard doctorDashboard = new Dashboard();
+                    doctorDashboard.setUserBean(UserExistsHandler.userBean);
+                    doctorDashboard.setVisible(true);
                     signIn.dispose();
                     break;
                 case "Nurse":
-                    System.out.println("Loading Nurse Dashboard...");
+                    Dashboard nurseDashboard = new Dashboard();
+                    nurseDashboard.setUserBean(UserExistsHandler.userBean);
+                    nurseDashboard.setVisible(true);
+                    signIn.dispose();
                     break;
                 case "Admin":
-                    System.out.println("Loading Admin Dashboard...");
+                    Dashboard adminDashboard = new Dashboard();
+                    adminDashboard.setUserBean(UserExistsHandler.userBean);
+                    adminDashboard.setVisible(true);
+                    signIn.dispose();
                     break;
                 case "Pharmacist":
-                    System.out.println("Loading Pharmacist Dashboard...");
+                    Dashboard pharmarcistDashboard = new Dashboard();
+                    pharmarcistDashboard.setUserBean(UserExistsHandler.userBean);
+                    pharmarcistDashboard.setVisible(true);
+                    signIn.dispose();
                     break;
                 default:
                     System.out.println("Unknown Role!");

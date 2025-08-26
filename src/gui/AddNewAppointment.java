@@ -45,6 +45,7 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jComboBox3 = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setAlwaysOnTop(true);
         setUndecorated(true);
 
         jPanel1.setBackground(new java.awt.Color(239, 239, 236));

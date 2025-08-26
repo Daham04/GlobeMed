@@ -7,6 +7,124 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import model.UserBean;
 
+abstract class AccessHandler {
+
+    protected AccessHandler next;
+
+    public void setNext(AccessHandler next) {
+        this.next = next;
+    }
+
+    public abstract void handle(UserBean user, NavBar navBar);
+
+}
+
+class RoleAccessHandler extends AccessHandler {
+
+    @Override
+    public void handle(UserBean user, NavBar navBar) {
+        String role = user.getUserRole();
+        navBar.disableAll();
+
+        switch (role) {
+            case "Admin":
+                navBar.enableDashboard();
+                navBar.enableStaff();
+                navBar.enableAppointments();
+                navBar.enableReports();
+                navBar.enableProfile();
+                break;
+
+            case "Doctor":
+                navBar.enableDashboard();
+                navBar.enablePatients();
+                navBar.enableAppointments();
+                navBar.enableReports();
+                navBar.enableProfile();
+                break;
+
+            case "Nurse":
+                navBar.enableDashboard();
+                navBar.enableAppointments();
+                navBar.enablePatients();
+                navBar.enableProfile();
+                break;
+
+            case "Pharmacist":
+                navBar.enableDashboard();
+                navBar.enableBilling();
+                break;
+
+            default:
+                System.out.println("❌ Unknown Role! No access granted.");
+        }
+
+        if (next != null) {
+            next.handle(user, navBar);
+        }
+    }
+
+}
+
+class NavBar {
+
+    private JToggleButton btnDashboard;
+    private JToggleButton btnPatients;
+    private JToggleButton btnAppointments;
+    private JToggleButton btnStaff;
+    private JToggleButton btnReports;
+    private JToggleButton btnProfile;
+    private JToggleButton btnBilling;
+
+    public NavBar(JToggleButton btnDashboard, JToggleButton btnPatients, JToggleButton btnAppointments, JToggleButton btnStaff, JToggleButton btnReports, JToggleButton btnProfile, JToggleButton btnBilling) {
+        this.btnDashboard = btnDashboard;
+        this.btnPatients = btnPatients;
+        this.btnAppointments = btnAppointments;
+        this.btnStaff = btnStaff;
+        this.btnReports = btnReports;
+        this.btnProfile = btnProfile;
+        this.btnBilling = btnBilling;
+    }
+
+    public void disableAll() {
+        btnDashboard.setEnabled(false);
+        btnPatients.setEnabled(false);
+        btnAppointments.setEnabled(false);
+        btnStaff.setEnabled(false);
+        btnReports.setEnabled(false);
+        btnProfile.setEnabled(false);
+        btnBilling.setEnabled(false);
+    }
+
+    public void enableDashboard() {
+        btnDashboard.setEnabled(true);
+    }
+
+    public void enablePatients() {
+        btnPatients.setEnabled(true);
+    }
+
+    public void enableAppointments() {
+        btnAppointments.setEnabled(true);
+    }
+
+    public void enableStaff() {
+        btnStaff.setEnabled(true);
+    }
+
+    public void enableReports() {
+        btnReports.setEnabled(true);
+    }
+
+    public void enableProfile() {
+        btnProfile.setEnabled(true);
+    }
+
+    public void enableBilling() {
+        btnBilling.setEnabled(true);
+    }
+}
+
 public class Dashboard extends javax.swing.JFrame {
 
     private UserBean userBean;
@@ -19,17 +137,26 @@ public class Dashboard extends javax.swing.JFrame {
 
     public Dashboard() {
         initComponents();
+    }
 
+    public void updateDasboardPanel() {
         jPanel4.removeAll();
-        DashboardPanel dp = new DashboardPanel();
+        DashboardPanel dp = new DashboardPanel(userBean);
         jPanel4.add(dp, BorderLayout.CENTER);
         SwingUtilities.updateComponentTreeUI(jPanel5);
     }
 
     public void setUserBean(UserBean userBean) {
         this.userBean = userBean;
+        updateDasboardPanel();
         jLabel3.setText(userBean.getFname() + " " + userBean.getLname());
         jLabel4.setText(userBean.getUserRole());
+
+        NavBar navBar = new NavBar(jToggleButton2, jToggleButton3, jToggleButton4,
+                jToggleButton5, jToggleButton7, jToggleButton6, jToggleButton8);
+
+        AccessHandler roleHandler = new RoleAccessHandler();
+        roleHandler.handle(userBean, navBar);
     }
 
     private void changePanel(JPanel panel) {
@@ -60,6 +187,7 @@ public class Dashboard extends javax.swing.JFrame {
         jToggleButton5 = new javax.swing.JToggleButton();
         jToggleButton6 = new javax.swing.JToggleButton();
         jToggleButton7 = new javax.swing.JToggleButton();
+        jToggleButton8 = new javax.swing.JToggleButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -277,6 +405,24 @@ public class Dashboard extends javax.swing.JFrame {
             }
         });
 
+        jToggleButton8.setBackground(new java.awt.Color(239, 239, 236));
+        jToggleButton8.setFont(new java.awt.Font("Bahnschrift", 1, 14)); // NOI18N
+        jToggleButton8.setForeground(new java.awt.Color(33, 52, 72));
+        jToggleButton8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/report.png"))); // NOI18N
+        jToggleButton8.setText("Billing");
+        jToggleButton8.setToolTipText("Dashboard");
+        jToggleButton8.setContentAreaFilled(false);
+        jToggleButton8.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jToggleButton8.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        jToggleButton8.setIconTextGap(15);
+        jToggleButton8.setOpaque(true);
+        jToggleButton8.setPreferredSize(new java.awt.Dimension(119, 35));
+        jToggleButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton8ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -295,6 +441,7 @@ public class Dashboard extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, 242, Short.MAX_VALUE)
                 .addContainerGap())
+            .addComponent(jToggleButton8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(jToggleButton7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(jToggleButton6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
@@ -317,10 +464,12 @@ public class Dashboard extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jToggleButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jToggleButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jToggleButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jToggleButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(335, Short.MAX_VALUE))
+                .addContainerGap(294, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -347,7 +496,7 @@ public class Dashboard extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jToggleButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton2ActionPerformed
-        changePanel(new DashboardPanel());
+        changePanel(new DashboardPanel(userBean));
     }//GEN-LAST:event_jToggleButton2ActionPerformed
 
     private void jToggleButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton3ActionPerformed
@@ -369,6 +518,10 @@ public class Dashboard extends javax.swing.JFrame {
     private void jToggleButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton7ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jToggleButton7ActionPerformed
+
+    private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton8ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jToggleButton8ActionPerformed
 
     public static void main(String args[]) {
         FlatLightLaf.setup();
@@ -398,13 +551,7 @@ public class Dashboard extends javax.swing.JFrame {
     private javax.swing.JToggleButton jToggleButton5;
     private javax.swing.JToggleButton jToggleButton6;
     private javax.swing.JToggleButton jToggleButton7;
+    private javax.swing.JToggleButton jToggleButton8;
     // End of variables declaration//GEN-END:variables
 
-    private void setFontBold(JToggleButton jToggleButton2) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    private void setFontNormal(JToggleButton jToggleButton2) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
 }

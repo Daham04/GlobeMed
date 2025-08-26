@@ -35,6 +35,7 @@ public class CheckUserPanel extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setAlwaysOnTop(true);
         setUndecorated(true);
 
         jPanel1.setBackground(new java.awt.Color(239, 239, 236));
