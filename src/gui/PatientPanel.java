@@ -22,13 +22,19 @@ class BasicPatientLoader implements PatientLoader {
     @Override
     public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
         try {
-            ResultSet patientSet = MySQL.execute("SELECT * FROM `patient`"
-                    + " INNER JOIN `gender` ON `patient`.`gender_id` = `gender`.`id`"
-                    + " INNER JOIN `patient_has_medicine` ON `patient_has_medicine`.`patient_patient_nic` = `patient`.`patient_nic`"
-                    + " INNER JOIN `medicine` ON `medicine`.`id` = `patient_has_medicine`.`medicine_id`"
-                    + " INNER JOIN `medicine_history` ON `medicine_history`.`id` = `patient_has_medicine`.`medicine_history_id`"
-                    + " INNER JOIN `patient_has_surgery` ON `patient_has_surgery`.`patient_patient_nic` = `patient`.`patient_nic`"
-                    + " INNER JOIN `surgery` ON `patient_has_surgery`.`surgery_id` = `surgery`.`id`");
+            ResultSet patientSet = MySQL.execute(
+                    "SELECT p.patient_nic, p.first_name, p.last_name, p.mobile, p.age, "
+                    + "p.addres_line1, p.address_line2, g.gender, "
+                    + "m.medicine, mh.date AS medicine_date, "
+                    + "s.surgery, ps.date AS surgery_date "
+                    + "FROM patient p "
+                    + "INNER JOIN gender g ON p.gender_id = g.id "
+                    + "LEFT JOIN patient_has_medicine pm ON pm.patient_patient_nic = p.patient_nic "
+                    + "LEFT JOIN medicine m ON m.id = pm.medicine_id "
+                    + "LEFT JOIN medicine_history mh ON mh.id = pm.medicine_history_id "
+                    + "LEFT JOIN patient_has_surgery ps ON ps.patient_patient_nic = p.patient_nic "
+                    + "LEFT JOIN surgery s ON s.id = ps.surgery_id"
+            );
 
             DefaultTableModel model1 = (DefaultTableModel) tablePatients.getModel();
             model1.setRowCount(0);
@@ -41,20 +47,24 @@ class BasicPatientLoader implements PatientLoader {
 
             Set<String> addedPatients = new HashSet<>();
             Set<String> addedSurgeries = new HashSet<>();
+            Set<String> addedMedicines = new HashSet<>();
 
             while (patientSet.next()) {
-                String patientNIC = patientSet.getString("patient.patient_nic");
-                String patientName = patientSet.getString("patient.first_name") + " " + patientSet.getString("patient.last_name");
-                String patientGender = patientSet.getString("gender.gender");
-                String patientMobile = patientSet.getString("patient.mobile");
-                String patientAge = patientSet.getString("patient.age");
-                String patientAd1 = patientSet.getString("patient.addres_line1");
-                String patientAd2 = patientSet.getString("patient.address_line2");
-                String medicineName = patientSet.getString("medicine.medicine");
-                String medicineDate = patientSet.getString("medicine_history.date");
-                String surgeryName = patientSet.getString("surgery.surgery");
-                String surgeryDate = patientSet.getString("patient_has_surgery.date");
+                String patientNIC = patientSet.getString("p.patient_nic");
+                String patientName = patientSet.getString("p.first_name") + " " + patientSet.getString("p.last_name");
+                String patientGender = patientSet.getString("g.gender");
+                String patientMobile = patientSet.getString("p.mobile");
+                String patientAge = patientSet.getString("p.age");
+                String patientAd1 = patientSet.getString("p.addres_line1");
+                String patientAd2 = patientSet.getString("p.address_line2");
 
+                String medicineName = patientSet.getString("m.medicine");
+                String medicineDate = patientSet.getString("medicine_date");
+
+                String surgeryName = patientSet.getString("s.surgery");
+                String surgeryDate = patientSet.getString("surgery_date");
+
+                // --- Patient Table ---
                 if (!addedPatients.contains(patientNIC)) {
                     var vector1 = new Vector<>();
                     vector1.add(patientNIC);
@@ -69,29 +79,42 @@ class BasicPatientLoader implements PatientLoader {
                     addedPatients.add(patientNIC);
                 }
 
-                String surgeryKey = patientNIC + "-" + surgeryName + "-" + surgeryDate;
+                // --- Surgery Table (use N/A if no surgery) ---
+                String sName = (surgeryName != null) ? surgeryName : "N/A";
+                String sDate = (surgeryDate != null) ? surgeryDate : "N/A";
+                String surgeryKey = patientNIC + "-" + sName + "-" + sDate;
+
                 if (!addedSurgeries.contains(surgeryKey)) {
                     var vector2 = new Vector<>();
                     vector2.add(patientNIC);
-                    vector2.add(surgeryName);
-                    vector2.add(surgeryDate);
+                    vector2.add(sName);
+                    vector2.add(sDate);
 
                     model2.addRow(vector2);
                     addedSurgeries.add(surgeryKey);
                 }
 
-                var vector3 = new Vector<>();
-                vector3.add(patientNIC);
-                vector3.add(medicineName);
-                vector3.add(medicineDate);
+                // --- Medicine Table (use N/A if no medicine) ---
+                String mName = (medicineName != null) ? medicineName : "N/A";
+                String mDate = (medicineDate != null) ? medicineDate : "N/A";
+                String medicineKey = patientNIC + "-" + mName + "-" + mDate;
 
-                model3.addRow(vector3);
+                if (!addedMedicines.contains(medicineKey)) {
+                    var vector3 = new Vector<>();
+                    vector3.add(patientNIC);
+                    vector3.add(mName);
+                    vector3.add(mDate);
+
+                    model3.addRow(vector3);
+                    addedMedicines.add(medicineKey);
+                }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 }
 
 abstract class PatientLoaderDecorator implements PatientLoader {

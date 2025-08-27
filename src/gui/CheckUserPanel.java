@@ -1,6 +1,11 @@
 package gui;
 
+import java.sql.ResultSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import model.MySQL;
 
 public class CheckUserPanel extends javax.swing.JFrame {
 
@@ -137,16 +142,35 @@ public class CheckUserPanel extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 
-        String PatientNIC = jTextField2.getText().toString();
-        isAvaiilable = PatientNIC.equals("11111");
-        if (isAvaiilable) {
-            this.dispose();
-            JFrame frame = new AddNewAppointment();
+        String patientNIC = jTextField2.getText().trim();
+
+        if (patientNIC.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please enter a Patient NIC.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            ResultSet nicResultSet = MySQL.execute(
+                    "SELECT patient_nic FROM patient WHERE patient_nic='" + patientNIC + "'"
+            );
+
+            JFrame frame;
+            if (nicResultSet.next()) {
+                // Patient exists
+                frame = new AddNewAppointment(patientNIC);
+            } else {
+                // Patient not found
+                frame = new AddPatientPanel(patientNIC);
+            }
+
             frame.setVisible(true);
-        } else {
             this.dispose();
-            JFrame frame = new AddPatientPanel();
-            frame.setVisible(true);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }//GEN-LAST:event_jButton1ActionPerformed
 

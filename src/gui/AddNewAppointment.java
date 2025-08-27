@@ -1,8 +1,11 @@
 package gui;
 
 public class AddNewAppointment extends javax.swing.JFrame {
+    
+    private String patientNIC;
 
-    public AddNewAppointment() {
+    public AddNewAppointment(String patientNIC) {
+        this.patientNIC = patientNIC;
         initComponents();
     }
 
