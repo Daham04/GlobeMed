@@ -8,10 +8,6 @@ import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import model.UserBean;
 
-/**
- *
- * @author Daham Bnadara
- */
 public class DashboardPanel extends javax.swing.JPanel {
 
     private UserBean userBean;
@@ -363,10 +359,10 @@ public class DashboardPanel extends javax.swing.JPanel {
 
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         for (int i = 0; i < model.getRowCount(); i++) {
-            String tableAppID = model.getValueAt(i, 0).toString(); // AppID is column 0
+            String tableAppID = model.getValueAt(i, 0).toString(); 
             if (tableAppID.equals(appID)) {
-                jTable1.setRowSelectionInterval(i, i); // highlight row
-                jTable1.scrollRectToVisible(jTable1.getCellRect(i, 0, true)); // scroll to it
+                jTable1.setRowSelectionInterval(i, i); 
+                jTable1.scrollRectToVisible(jTable1.getCellRect(i, 0, true));
                 return;
             }
         }

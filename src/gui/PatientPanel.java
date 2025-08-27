@@ -4,35 +4,39 @@ import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import model.MySQL;
+import model.UserBean;
 
-public class PatientPanel extends javax.swing.JPanel {
+interface PatientLoader {
 
-    public PatientPanel() {
-        initComponents();
-        loadPatients();
-    }
+    void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines);
+}
 
-    public void loadPatients() {
+class BasicPatientLoader implements PatientLoader {
+
+    @Override
+    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
         try {
             ResultSet patientSet = MySQL.execute("SELECT * FROM `patient`"
-                    + "INNER JOIN `gender` ON `patient`.`gender_id` = `gender`.`id`"
-                    + "INNER JOIN `patient_has_medicine` ON `patient_has_medicine`.`patient_patient_nic` = `patient`.`patient_nic`"
-                    + "INNER JOIN `medicine` ON `medicine`.`id` = `patient_has_medicine`.`medicine_id`"
-                    + "INNER JOIN `medicine_history` ON `medicine_history`.`id` = `patient_has_medicine`.`medicine_history_id`"
-                    + "INNER JOIN `patient_has_surgery` ON `patient_has_surgery`.`patient_patient_nic` = `patient`.`patient_nic`"
-                    + "INNER JOIN `surgery` ON `patient_has_surgery`.`surgery_id` = `surgery`.`id`");
+                    + " INNER JOIN `gender` ON `patient`.`gender_id` = `gender`.`id`"
+                    + " INNER JOIN `patient_has_medicine` ON `patient_has_medicine`.`patient_patient_nic` = `patient`.`patient_nic`"
+                    + " INNER JOIN `medicine` ON `medicine`.`id` = `patient_has_medicine`.`medicine_id`"
+                    + " INNER JOIN `medicine_history` ON `medicine_history`.`id` = `patient_has_medicine`.`medicine_history_id`"
+                    + " INNER JOIN `patient_has_surgery` ON `patient_has_surgery`.`patient_patient_nic` = `patient`.`patient_nic`"
+                    + " INNER JOIN `surgery` ON `patient_has_surgery`.`surgery_id` = `surgery`.`id`");
 
-            DefaultTableModel model1 = (DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model1 = (DefaultTableModel) tablePatients.getModel();
             model1.setRowCount(0);
 
-            DefaultTableModel model2 = (DefaultTableModel) jTable2.getModel();
+            DefaultTableModel model2 = (DefaultTableModel) tableSurgeries.getModel();
             model2.setRowCount(0);
 
-            DefaultTableModel model3 = (DefaultTableModel) jTable3.getModel();
+            DefaultTableModel model3 = (DefaultTableModel) tableMedicines.getModel();
             model3.setRowCount(0);
 
             Set<String> addedPatients = new HashSet<>();
@@ -51,9 +55,8 @@ public class PatientPanel extends javax.swing.JPanel {
                 String surgeryName = patientSet.getString("surgery.surgery");
                 String surgeryDate = patientSet.getString("patient_has_surgery.date");
 
-                // --- Add patient only once ---
                 if (!addedPatients.contains(patientNIC)) {
-                    Vector vector1 = new Vector();
+                    var vector1 = new Vector<>();
                     vector1.add(patientNIC);
                     vector1.add(patientName);
                     vector1.add(patientGender);
@@ -66,10 +69,9 @@ public class PatientPanel extends javax.swing.JPanel {
                     addedPatients.add(patientNIC);
                 }
 
-                // --- Add surgery without duplicates ---
                 String surgeryKey = patientNIC + "-" + surgeryName + "-" + surgeryDate;
                 if (!addedSurgeries.contains(surgeryKey)) {
-                    Vector vector2 = new Vector();
+                    var vector2 = new Vector<>();
                     vector2.add(patientNIC);
                     vector2.add(surgeryName);
                     vector2.add(surgeryDate);
@@ -78,8 +80,7 @@ public class PatientPanel extends javax.swing.JPanel {
                     addedSurgeries.add(surgeryKey);
                 }
 
-                // --- Medicine (always add, since duplicates less likely) ---
-                Vector vector3 = new Vector();
+                var vector3 = new Vector<>();
                 vector3.add(patientNIC);
                 vector3.add(medicineName);
                 vector3.add(medicineDate);
@@ -90,6 +91,102 @@ public class PatientPanel extends javax.swing.JPanel {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+}
+
+abstract class PatientLoaderDecorator implements PatientLoader {
+
+    protected PatientLoader decoratedLoader;
+
+    public PatientLoaderDecorator(PatientLoader loader) {
+        this.decoratedLoader = loader;
+    }
+
+    @Override
+    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
+        decoratedLoader.loadPatients(tablePatients, tableSurgeries, tableMedicines);
+    }
+}
+
+class SecurityPatientLoader extends PatientLoaderDecorator {
+
+    private String userRole;
+
+    public SecurityPatientLoader(PatientLoader loader, String userRole) {
+        super(loader);
+        this.userRole = userRole;
+    }
+
+    @Override
+    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
+        if (!isAuthorized()) {
+            JOptionPane.showMessageDialog(null, "Access Denied: You are not authorized to view patient data.");
+            return;
+        }
+        super.loadPatients(tablePatients, tableSurgeries, tableMedicines);
+    }
+
+    private boolean isAuthorized() {
+        return userRole.equalsIgnoreCase("Doctor") || userRole.equalsIgnoreCase("Nurse");
+    }
+}
+
+class SearchPatientLoader extends PatientLoaderDecorator {
+
+    private String patientNIC;
+
+    public SearchPatientLoader(PatientLoader loader, String patientNIC) {
+        super(loader);
+        this.patientNIC = patientNIC;
+    }
+
+    @Override
+    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
+        super.loadPatients(tablePatients, tableSurgeries, tableMedicines);
+
+        DefaultTableModel model1 = (DefaultTableModel) tablePatients.getModel();
+        TableRowSorter<DefaultTableModel> sorter1 = new TableRowSorter<>(model1);
+        tablePatients.setRowSorter(sorter1);
+
+        DefaultTableModel model2 = (DefaultTableModel) tableSurgeries.getModel();
+        TableRowSorter<DefaultTableModel> sorter2 = new TableRowSorter<>(model2);
+        tableSurgeries.setRowSorter(sorter2);
+
+        DefaultTableModel model3 = (DefaultTableModel) tableMedicines.getModel();
+        TableRowSorter<DefaultTableModel> sorter3 = new TableRowSorter<>(model3);
+        tableMedicines.setRowSorter(sorter3);
+
+        if (patientNIC == null || patientNIC.isEmpty()) {
+            sorter1.setRowFilter(null);
+            sorter2.setRowFilter(null);
+            sorter3.setRowFilter(null);
+        } else {
+            sorter1.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
+            sorter2.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
+            sorter3.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
+        }
+    }
+}
+
+public class PatientPanel extends javax.swing.JPanel {
+
+    private UserBean userBean;
+
+    public PatientPanel(UserBean userBean) {
+        this.userBean = userBean;
+        initComponents();
+        loadActivity();
+    }
+
+    public void loadActivity() {
+
+        String currentUserRole = userBean.getUserRole();
+
+        PatientLoader loader = new BasicPatientLoader();
+
+        SecurityPatientLoader loader1 = new SecurityPatientLoader(loader, currentUserRole);
+
+        loader1.loadPatients(jTable1, jTable2, jTable3);
 
     }
 
@@ -364,58 +461,23 @@ public class PatientPanel extends javax.swing.JPanel {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         String patientNIC = jTextField1.getText().trim();
 
-        DefaultTableModel model1 = (DefaultTableModel) jTable1.getModel();
-        TableRowSorter<DefaultTableModel> sorter1 = new TableRowSorter<>(model1);
-        jTable1.setRowSorter(sorter1);
+        PatientLoader loader = new BasicPatientLoader();
 
-        DefaultTableModel model2 = (DefaultTableModel) jTable2.getModel();
-        TableRowSorter<DefaultTableModel> sorter2 = new TableRowSorter<>(model2);
-        jTable2.setRowSorter(sorter2);
+        loader = new SecurityPatientLoader(loader, userBean.getUserRole());
 
-        DefaultTableModel model3 = (DefaultTableModel) jTable3.getModel();
-        TableRowSorter<DefaultTableModel> sorter3 = new TableRowSorter<>(model3);
-        jTable3.setRowSorter(sorter3);
+        loader = new SearchPatientLoader(loader, patientNIC);
 
-        if (patientNIC.isEmpty()) {
-            sorter1.setRowFilter(null);
-            sorter2.setRowFilter(null);
-            sorter3.setRowFilter(null);
-        } else {
-            sorter1.setRowFilter(RowFilter.regexFilter("^" + patientNIC + "$", 0));
-            sorter2.setRowFilter(RowFilter.regexFilter("^" + patientNIC + "$", 0));
-            sorter3.setRowFilter(RowFilter.regexFilter("^" + patientNIC + "$", 0));
-        }
+        loader.loadPatients(jTable1, jTable2, jTable3);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
         String patientNIC = jTextField1.getText().trim();
 
-        TableRowSorter<DefaultTableModel> sorter1 = (TableRowSorter<DefaultTableModel>) jTable1.getRowSorter();
-        TableRowSorter<DefaultTableModel> sorter2 = (TableRowSorter<DefaultTableModel>) jTable2.getRowSorter();
-        TableRowSorter<DefaultTableModel> sorter3 = (TableRowSorter<DefaultTableModel>) jTable3.getRowSorter();
+        PatientLoader loader = new BasicPatientLoader();
+        loader = new SecurityPatientLoader(loader, userBean.getUserRole());
+        loader = new SearchPatientLoader(loader, patientNIC);
 
-        if (sorter1 == null) {
-            sorter1 = new TableRowSorter<>((DefaultTableModel) jTable1.getModel());
-            jTable1.setRowSorter(sorter1);
-        }
-        if (sorter2 == null) {
-            sorter2 = new TableRowSorter<>((DefaultTableModel) jTable2.getModel());
-            jTable2.setRowSorter(sorter2);
-        }
-        if (sorter3 == null) {
-            sorter3 = new TableRowSorter<>((DefaultTableModel) jTable3.getModel());
-            jTable3.setRowSorter(sorter3);
-        }
-
-        if (patientNIC.isEmpty()) {
-            sorter1.setRowFilter(null);
-            sorter2.setRowFilter(null);
-            sorter3.setRowFilter(null);
-        } else {
-            sorter1.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
-            sorter2.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
-            sorter3.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
-        }
+        loader.loadPatients(jTable1, jTable2, jTable3);
     }//GEN-LAST:event_jTextField1KeyReleased
 
 
