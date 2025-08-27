@@ -10,121 +10,81 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import model.UserBean;
 
-abstract class AccessHandler {
+abstract class PanelHandler {
 
-    protected AccessHandler next;
+    protected PanelHandler next;
 
-    public void setNext(AccessHandler next) {
+    public void setNext(PanelHandler next) {
         this.next = next;
     }
 
-    public abstract void handle(UserBean user, NavBar navBar);
-
+    public abstract boolean handle(UserBean user, Dashboard dashboard);
 }
 
-class RoleAccessHandler extends AccessHandler {
+class AdminPanelHandler extends PanelHandler {
 
     @Override
-    public void handle(UserBean user, NavBar navBar) {
-        String role = user.getUserRole();
-        navBar.disableAll();
-
-        switch (role) {
-            case "Admin":
-                navBar.enableDashboard();
-                navBar.enableStaff();
-                navBar.enableAppointments();
-                navBar.enableReports();
-                navBar.enableProfile();
-                break;
-
-            case "Doctor":
-                navBar.enableDashboard();
-                navBar.enablePatients();
-                navBar.enableAppointments();
-                navBar.enableReports();
-                navBar.enableProfile();
-                break;
-
-            case "Nurse":
-                navBar.enableDashboard();
-                navBar.enableAppointments();
-                navBar.enablePatients();
-                navBar.enableProfile();
-                break;
-
-            case "Pharmacist":
-                navBar.enableDashboard();
-                navBar.enableBilling();
-                break;
-
-            default:
-                System.out.println("❌ Unknown Role! No access granted.");
+    public boolean handle(UserBean user, Dashboard dashboard) {
+        if ("Admin".equals(user.getUserRole())) {
+            dashboard.changePanel(new DashboardPanel(user));
+            dashboard.setSelectedButton("dashboard");
+            dashboard.configureButtons(true, false, true, true, false, true, true);
+            return true;
         }
-
-        if (next != null) {
-            next.handle(user, navBar);
-        }
+        return (next != null) && next.handle(user, dashboard);
     }
-
 }
 
-class NavBar {
+class DoctorPanelHandler extends PanelHandler {
 
-    private JToggleButton btnDashboard;
-    private JToggleButton btnPatients;
-    private JToggleButton btnAppointments;
-    private JToggleButton btnStaff;
-    private JToggleButton btnReports;
-    private JToggleButton btnProfile;
-    private JToggleButton btnBilling;
-
-    public NavBar(JToggleButton btnDashboard, JToggleButton btnPatients, JToggleButton btnAppointments, JToggleButton btnStaff, JToggleButton btnReports, JToggleButton btnProfile, JToggleButton btnBilling) {
-        this.btnDashboard = btnDashboard;
-        this.btnPatients = btnPatients;
-        this.btnAppointments = btnAppointments;
-        this.btnStaff = btnStaff;
-        this.btnReports = btnReports;
-        this.btnProfile = btnProfile;
-        this.btnBilling = btnBilling;
+    @Override
+    public boolean handle(UserBean user, Dashboard dashboard) {
+        if ("Doctor".equals(user.getUserRole())) {
+            dashboard.changePanel(new DashboardPanel(user));
+            dashboard.setSelectedButton("dashboard");
+            dashboard.configureButtons(true, true, true, false, false, true, true);
+            return true;
+        }
+        return (next != null) && next.handle(user, dashboard);
     }
+}
 
-    public void disableAll() {
-        btnDashboard.setEnabled(false);
-        btnPatients.setEnabled(false);
-        btnAppointments.setEnabled(false);
-        btnStaff.setEnabled(false);
-        btnReports.setEnabled(false);
-        btnProfile.setEnabled(false);
-        btnBilling.setEnabled(false);
+class NursePanelHandler extends PanelHandler {
+
+    @Override
+    public boolean handle(UserBean user, Dashboard dashboard) {
+        if ("Nurse".equals(user.getUserRole())) {
+            dashboard.changePanel(new NurseDashboardPanel());
+            dashboard.setSelectedButton("dashboard");
+            dashboard.configureButtons(true, false, true, false, false, false, true);
+            return true;
+        }
+        return (next != null) && next.handle(user, dashboard);
     }
+}
 
-    public void enableDashboard() {
-        btnDashboard.setEnabled(true);
+class PharmacistPanelHandler extends PanelHandler {
+
+    @Override
+    public boolean handle(UserBean user, Dashboard dashboard) {
+        if ("Pharmacist".equals(user.getUserRole())) {
+            dashboard.changePanel(new DashboardPanel(user));
+            dashboard.setSelectedButton("dashboard");
+            dashboard.configureButtons(true, false, false, false, true, false, true);
+            return true;
+        }
+        return (next != null) && next.handle(user, dashboard);
     }
+}
 
-    public void enablePatients() {
-        btnPatients.setEnabled(true);
-    }
+class DefaultPanelHandler extends PanelHandler {
 
-    public void enableAppointments() {
-        btnAppointments.setEnabled(true);
-    }
-
-    public void enableStaff() {
-        btnStaff.setEnabled(true);
-    }
-
-    public void enableReports() {
-        btnReports.setEnabled(true);
-    }
-
-    public void enableProfile() {
-        btnProfile.setEnabled(true);
-    }
-
-    public void enableBilling() {
-        btnBilling.setEnabled(true);
+    @Override
+    public boolean handle(UserBean user, Dashboard dashboard) {
+        dashboard.changePanel(new DashboardPanel(user));
+        dashboard.setSelectedButton("dashboard");
+        dashboard.configureButtons(true, false, false, false, false, false, false);
+        return true;
     }
 }
 
@@ -142,21 +102,19 @@ public class Dashboard extends javax.swing.JFrame {
         initComponents();
         startDateTimeUpdater();
     }
-    
+
     private void startDateTimeUpdater() {
-    // Timer to refresh every second
         Timer timer = new Timer(1000, e -> {
             LocalDateTime now = LocalDateTime.now();
 
-        // Formatters
-            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE dd MMM, yyyy"); 
-        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("hh:mm:ss a");
+            DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE dd MMM, yyyy");
+            DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("hh:mm:ss a");
 
-        jLabel7.setText(now.format(dateFormat));
-        jLabel8.setText(now.format(timeFormat));
-    });
-    timer.start();
-}
+            jLabel7.setText(now.format(dateFormat));
+            jLabel8.setText(now.format(timeFormat));
+        });
+        timer.start();
+    }
 
     public void updateDasboardPanel() {
         jPanel4.removeAll();
@@ -171,17 +129,51 @@ public class Dashboard extends javax.swing.JFrame {
         jLabel3.setText(userBean.getFname() + " " + userBean.getLname());
         jLabel4.setText(userBean.getUserRole());
 
-        NavBar navBar = new NavBar(jToggleButton2, jToggleButton3, jToggleButton4,
-                jToggleButton5, jToggleButton7, jToggleButton6, jToggleButton8);
+        PanelHandler admin = new AdminPanelHandler();
+        PanelHandler doctor = new DoctorPanelHandler();
+        PanelHandler nurse = new NursePanelHandler();
+        PanelHandler pharmacist = new PharmacistPanelHandler();
+        PanelHandler def = new DefaultPanelHandler();
 
-        AccessHandler roleHandler = new RoleAccessHandler();
-        roleHandler.handle(userBean, navBar);
+        admin.setNext(doctor);
+        doctor.setNext(nurse);
+        nurse.setNext(pharmacist);
+        pharmacist.setNext(def);
+
+        admin.handle(userBean, this);
     }
 
-    private void changePanel(JPanel panel) {
+    public void changePanel(JPanel panel) {
         jPanel4.removeAll();
         jPanel4.add(panel, BorderLayout.CENTER);
         SwingUtilities.updateComponentTreeUI(jPanel5);
+    }
+
+    public void configureButtons(boolean dashboard, boolean patient, boolean appointment, boolean staff, boolean billing, boolean reports, boolean profile) {
+        jToggleButton2.setEnabled(dashboard);
+        jToggleButton3.setEnabled(patient);
+        jToggleButton4.setEnabled(appointment);
+        jToggleButton5.setEnabled(staff);
+        jToggleButton6.setEnabled(profile);
+        jToggleButton7.setEnabled(reports);
+        jToggleButton8.setEnabled(billing);
+    }
+
+    public void setSelectedButton(String type) {
+        switch (type) {
+            case "dashboard":
+                jToggleButton2.setSelected(true);
+                break;
+            case "patient":
+                jToggleButton3.setSelected(true);
+                break;
+            case "appointment":
+                jToggleButton4.setSelected(true);
+                break;
+            case "billing":
+                jToggleButton8.setSelected(true);
+                break;
+        }
     }
 
     @SuppressWarnings("unchecked")
