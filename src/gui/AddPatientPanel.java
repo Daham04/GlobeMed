@@ -53,6 +53,9 @@ class NameValidator implements PatientObserver {
         if (patient.getFirstName().trim().isEmpty()) {
             JOptionPane.showMessageDialog(parent, "First Name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
             return false;
+        } else if (patient.getLastName().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(parent, "Last Name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return false;
         }
         return true;
     }
@@ -62,7 +65,7 @@ class AgeValidator implements PatientObserver {
 
     @Override
     public boolean onNewPatient(Patient patient, JFrame parent) {
-        String ageStr = String.valueOf(patient.getAge()); // if you add this in Patient
+        String ageStr = String.valueOf(patient.getAge());
 
         if (ageStr == null || ageStr.trim().isEmpty()) {
             JOptionPane.showMessageDialog(parent,
@@ -80,9 +83,10 @@ class GenderValidator implements PatientObserver {
     @Override
     public boolean onNewPatient(Patient patient, JFrame parent) {
         String gender = patient.getGender();
-        if (gender == null || gender.trim().isEmpty()) {
+
+        if (gender == null || gender.trim().isEmpty() || gender.equals("Select")) {
             JOptionPane.showMessageDialog(parent,
-                    "Please select a Gender.",
+                    "Please select a valid Gender.",
                     "Validation Error",
                     JOptionPane.WARNING_MESSAGE);
             return false;
@@ -90,6 +94,7 @@ class GenderValidator implements PatientObserver {
         return true;
     }
 }
+
 
 class AddressValidator implements PatientObserver {
 

@@ -159,10 +159,8 @@ public class CheckUserPanel extends javax.swing.JFrame {
 
             JFrame frame;
             if (nicResultSet.next()) {
-                // Patient exists
                 frame = new AddNewAppointment(patientNIC);
             } else {
-                // Patient not found
                 frame = new AddPatientPanel(patientNIC);
             }
 

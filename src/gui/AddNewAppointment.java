@@ -1,12 +1,170 @@
 package gui;
 
+import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Vector;
+import javax.swing.DefaultComboBoxModel;
+import model.MySQL;
+
 public class AddNewAppointment extends javax.swing.JFrame {
-    
+
     private String patientNIC;
+
+    public HashMap<String, String> hospitalMap = new HashMap<>();
+    public HashMap<String, String> DoctorTypeMap = new HashMap<>();
+    public HashMap<String, String> DoctorMap = new HashMap<>();
+    public HashMap<String, String> TimeSlotMap = new HashMap<>();
 
     public AddNewAppointment(String patientNIC) {
         this.patientNIC = patientNIC;
         initComponents();
+        loadHospital();
+        loadDoctorTypes();
+    }
+
+    private void loadHospital() {
+        try {
+            ResultSet resultSet = MySQL.execute("SELECT * FROM `hospital`");
+            Vector v = new Vector();
+            v.add("Select");
+            while (resultSet.next()) {
+                hospitalMap.put(resultSet.getString("hospital"), resultSet.getString("id"));
+                v.add(resultSet.getString("hospital"));
+
+            }
+            DefaultComboBoxModel model = new DefaultComboBoxModel(v);
+
+            jComboBox1.setModel(model);
+            jTextField2.setText(patientNIC);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void loadDoctorTypes() {
+        try {
+            ResultSet resultSet = MySQL.execute("SELECT * FROM `type`");
+            Vector v = new Vector();
+            v.add("Select");
+            while (resultSet.next()) {
+                DoctorTypeMap.put(resultSet.getString("type"), resultSet.getString("id"));
+                v.add(resultSet.getString("type"));
+
+            }
+            DefaultComboBoxModel model = new DefaultComboBoxModel(v);
+
+            jComboBox4.setModel(model);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void loadDoctors() {
+        String hospital = jComboBox1.getSelectedItem().toString();
+        String type = jComboBox4.getSelectedItem().toString();
+        Date date = jDateChooser1.getDate();
+
+        System.out.println(hospital);
+        System.out.println(type);
+        System.out.println(date);
+
+        if (hospital.equals("Select") || type.equals("Select") || date == null) {
+            return;
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE");
+        String dayOfWeek = sdf.format(date);
+
+        try {
+            String query = "SELECT s.id, s.first_name, s.last_name "
+                    + "FROM staff s "
+                    + "INNER JOIN staff_has_hospital shh ON s.id = shh.staff_id "
+                    + "INNER JOIN hospital h ON h.id = shh.hospital_id "
+                    + "INNER JOIN type t ON t.id = shh.type_id "
+                    + "INNER JOIN days d ON d.id = shh.days_id "
+                    + "WHERE h.hospital = '" + hospital + "' "
+                    + "AND t.type = '" + type + "' "
+                    + "AND d.day = '" + dayOfWeek + "'";
+
+            ResultSet rs = MySQL.execute(query);
+            //System.out.println(rs.getString("s.first_name") + " " + rs.getString("s.last_name"));
+
+            Vector v = new Vector();
+            v.add("Select");
+
+            while (rs.next()) {
+
+                String doctorName = rs.getString("s.first_name") + " " + rs.getString("s.last_name");
+                DoctorMap.put(doctorName, rs.getString("s.id"));
+                v.add(doctorName);
+            }
+
+            DefaultComboBoxModel model = new DefaultComboBoxModel(v);
+            jComboBox2.setModel(model);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadTimeSlot() {
+        String hospital = jComboBox1.getSelectedItem().toString();
+        String type = jComboBox4.getSelectedItem().toString();
+        String doctor = jComboBox2.getSelectedItem().toString();
+        Date date = jDateChooser1.getDate();
+
+        if (hospital.equals("Select") || type.equals("Select") || date == null || doctor.equals("Select")) {
+            return;
+        }
+
+        // Convert date → DayOfWeek (e.g., Monday, Tuesday)
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE");
+        String dayOfWeek = sdf.format(date);
+
+        try {
+            // get doctorId from map
+            String doctorId = DoctorMap.get(doctor);
+            if (doctorId == null) {
+                System.out.println("Doctor not found in map!");
+                return;
+            }
+
+            int availability = 1; // or dynamic if needed
+
+            String query = "SELECT ts.id, ts.time "
+                    + "FROM staff s "
+                    + "INNER JOIN staff_has_hospital shh ON s.id = shh.staff_id "
+                    + "INNER JOIN hospital h ON h.id = shh.hospital_id "
+                    + "INNER JOIN type t ON t.id = shh.type_id "
+                    + "INNER JOIN days d ON d.id = shh.days_id "
+                    + "INNER JOIN time_slot ts ON ts.id = shh.time_slot_id "
+                    + "WHERE h.hospital = '" + hospital + "' "
+                    + "AND t.type = '" + type + "' "
+                    + "AND d.day = '" + dayOfWeek + "' "
+                    + "AND shh.staff_id = '" + doctorId + "' "
+                    + "AND shh.availability_id = '" + availability + "'";
+
+            ResultSet rs = MySQL.execute(query);
+
+            Vector<String> v = new Vector<>();
+            v.add("Select");
+
+            while (rs.next()) {
+                String timeSlots = rs.getString("ts.time");
+                TimeSlotMap.put(timeSlots, rs.getString("ts.id"));
+                v.add(timeSlots);
+            }
+
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>(v);
+            jComboBox3.setModel(model);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -32,7 +190,6 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jComboBox3 = new javax.swing.JComboBox<>();
         jLabel16 = new javax.swing.JLabel();
         jComboBox4 = new javax.swing.JComboBox<>();
-        jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
 
@@ -96,8 +253,8 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jLabel12.setText("Hospital :");
 
         jComboBox1.setBackground(new java.awt.Color(239, 239, 236));
-        jComboBox1.setForeground(new java.awt.Color(239, 239, 236));
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox1.setFont(new java.awt.Font("Bahnschrift", 0, 12)); // NOI18N
+        jComboBox1.setForeground(new java.awt.Color(33, 52, 72));
         jComboBox1.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(138, 189, 192), 2, true));
         jComboBox1.setMinimumSize(new java.awt.Dimension(64, 29));
         jComboBox1.setPreferredSize(new java.awt.Dimension(64, 29));
@@ -139,8 +296,8 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jLabel14.setText("Doctor :");
 
         jComboBox2.setBackground(new java.awt.Color(239, 239, 236));
-        jComboBox2.setForeground(new java.awt.Color(239, 239, 236));
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox2.setFont(new java.awt.Font("Bahnschrift", 0, 12)); // NOI18N
+        jComboBox2.setForeground(new java.awt.Color(33, 52, 72));
         jComboBox2.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(138, 189, 192), 2, true));
         jComboBox2.setMinimumSize(new java.awt.Dimension(64, 29));
         jComboBox2.setPreferredSize(new java.awt.Dimension(64, 29));
@@ -156,8 +313,8 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jLabel15.setText("Time Slot :");
 
         jComboBox3.setBackground(new java.awt.Color(239, 239, 236));
-        jComboBox3.setForeground(new java.awt.Color(239, 239, 236));
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox3.setFont(new java.awt.Font("Bahnschrift", 0, 12)); // NOI18N
+        jComboBox3.setForeground(new java.awt.Color(33, 52, 72));
         jComboBox3.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(138, 189, 192), 2, true));
         jComboBox3.setMinimumSize(new java.awt.Dimension(64, 29));
         jComboBox3.setPreferredSize(new java.awt.Dimension(64, 29));
@@ -173,8 +330,8 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jLabel16.setText("Type :");
 
         jComboBox4.setBackground(new java.awt.Color(239, 239, 236));
-        jComboBox4.setForeground(new java.awt.Color(239, 239, 236));
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox4.setFont(new java.awt.Font("Bahnschrift", 0, 12)); // NOI18N
+        jComboBox4.setForeground(new java.awt.Color(33, 52, 72));
         jComboBox4.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(138, 189, 192), 2, true));
         jComboBox4.setMinimumSize(new java.awt.Dimension(64, 29));
         jComboBox4.setPreferredSize(new java.awt.Dimension(64, 29));
@@ -184,17 +341,23 @@ public class AddNewAppointment extends javax.swing.JFrame {
             }
         });
 
-        jButton3.setBackground(new java.awt.Color(239, 239, 236));
-        jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/search.png"))); // NOI18N
-        jButton3.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(204, 204, 204), 2, true));
-
         jButton4.setBackground(new java.awt.Color(239, 239, 236));
         jButton4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/search.png"))); // NOI18N
         jButton4.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(204, 204, 204), 2, true));
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
 
         jButton5.setBackground(new java.awt.Color(239, 239, 236));
         jButton5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/resources/search.png"))); // NOI18N
         jButton5.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(204, 204, 204), 2, true));
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -226,11 +389,8 @@ public class AddNewAppointment extends javax.swing.JFrame {
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                                 .addGap(31, 31, 31)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jScrollPane1)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addComponent(jButton3, javax.swing.GroupLayout.PREFERRED_SIZE, 58, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jComboBox1, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel14)
@@ -261,11 +421,9 @@ public class AddNewAppointment extends javax.swing.JFrame {
                         .addComponent(jLabel10))
                     .addComponent(jDateChooser1, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(jLabel12)
-                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel12)
+                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -331,10 +489,19 @@ public class AddNewAppointment extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBox4ActionPerformed
 
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        // TODO add your handling code here:
+        loadDoctors();
+    }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        // TODO add your handling code here:
+        loadTimeSlot();
+    }//GEN-LAST:event_jButton5ActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JComboBox<String> jComboBox1;
