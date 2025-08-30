@@ -109,7 +109,7 @@ class StaffMediator {
     }
 
     public void addStaff(String username, String firstName, String lastName,
-            String mobile, String email, String password, String roleId) {
+            String mobile, String email, String password, String roleId, java.awt.Component parent) {
         try {
             // Build Staff using Builder
             Staff staff = new Staff.Builder()
@@ -135,8 +135,9 @@ class StaffMediator {
             // Save Staff
             saver.save(staff);
 
-            JOptionPane.showMessageDialog(null, "Staff member added successfully!");
-
+            // ===== Success Message =====
+            JOptionPane.showMessageDialog(parent, "✅ Staff member added successfully!");
+            
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage());
         }
@@ -414,12 +415,13 @@ public class AddNewMemberPanel extends javax.swing.JFrame {
                             .addComponent(jTextField5, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel10))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel12)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                 .addComponent(jTextField7, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel14)))
+                                .addComponent(jLabel14))
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel12)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, 18, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -428,7 +430,6 @@ public class AddNewMemberPanel extends javax.swing.JFrame {
                         .addGap(29, 29, 29)
                         .addComponent(jLabel8)
                         .addGap(0, 0, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -486,7 +487,8 @@ public class AddNewMemberPanel extends javax.swing.JFrame {
                 jTextField5.getText(),
                 jTextField6.getText(),
                 jTextField7.getText(),
-                roleId
+                roleId,
+                this
         );
     }//GEN-LAST:event_jButton1ActionPerformed
 
