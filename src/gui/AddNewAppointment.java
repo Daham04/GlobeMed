@@ -2,11 +2,152 @@ package gui;
 
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Vector;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
 import model.MySQL;
+
+interface AppointmentSaver {
+
+    void saveAppointment(String patientNIC, String hospitalId, String doctorId,
+            String typeId, String timeSlotId, java.util.Date date,
+            String notes) throws Exception;
+}
+
+class BasicAppointmentSaver implements AppointmentSaver {
+
+    @Override
+    public void saveAppointment(String patientNIC, String hospitalId, String doctorId,
+            String typeId, String timeSlotId, java.util.Date date,
+            String notes) throws Exception {
+
+        try {
+            LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            int dayOfWeek = localDate.getDayOfWeek().getValue();
+
+            String query = "SELECT id FROM staff_has_hospital "
+                    + "WHERE staff_id = '" + doctorId + "' "
+                    + "AND hospital_id = '" + hospitalId + "' "
+                    + "AND time_slot_id = '" + timeSlotId + "' "
+                    + "AND days_id = '" + dayOfWeek + "' "
+                    + "AND type_id = '" + typeId + "' LIMIT 1";
+
+            ResultSet rs = MySQL.execute(query);
+
+            int staffHasHospitalId = -1;
+            if (rs.next()) {
+                staffHasHospitalId = rs.getInt("id");
+            }
+
+            if (staffHasHospitalId == -1) {
+                JOptionPane.showMessageDialog(null,
+                        "No matching staff availability found for this doctor/date/time slot!",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String insert = "INSERT INTO appointment "
+                    + "(appointment_date, patient_patient_nic, staff_has_hospital_id, appointment_status_id, price) "
+                    + "VALUES ('" + java.sql.Date.valueOf(localDate) + "', '" + patientNIC + "', '"
+                    + staffHasHospitalId + "', 1, 2000)"; // 1 = Pending/Active status
+            MySQL.execute(insert);
+
+            String update = "UPDATE staff_has_hospital SET availability_id = 2 "
+                    + "WHERE id = '" + staffHasHospitalId + "'";
+            MySQL.execute(update);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                    "Error saving appointment: " + e.getMessage(),
+                    "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
+
+abstract class AppointmentSaverDecorator implements AppointmentSaver {
+
+    protected AppointmentSaver wrappedSaver;
+
+    public AppointmentSaverDecorator(AppointmentSaver saver) {
+        this.wrappedSaver = saver;
+    }
+
+    @Override
+    public void saveAppointment(String patientNIC, String hospitalId, String doctorId,
+            String typeId, String timeSlotId, java.util.Date date,
+            String notes) throws Exception {
+        wrappedSaver.saveAppointment(patientNIC, hospitalId, doctorId, typeId, timeSlotId, date, notes);
+    }
+}
+
+class LoggingAppointmentSaver extends AppointmentSaverDecorator {
+
+    public LoggingAppointmentSaver(AppointmentSaver saver) {
+        super(saver);
+    }
+
+    @Override
+    public void saveAppointment(String patientNIC, String hospitalId, String doctorId,
+            String typeId, String timeSlotId, java.util.Date date,
+            String notes) throws Exception {
+        super.saveAppointment(patientNIC, hospitalId, doctorId, typeId, timeSlotId, date, notes);
+    }
+}
+
+class ValidationAppointmentSaver extends AppointmentSaverDecorator {
+
+    public ValidationAppointmentSaver(AppointmentSaver saver) {
+        super(saver);
+    }
+
+    @Override
+    public void saveAppointment(String patientNIC, String hospitalId, String doctorId,
+            String typeId, String timeSlotId, Date date,
+            String notes) throws Exception {
+
+        if (patientNIC == null || patientNIC.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Please enter NIC",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+
+        } else if (date == null) {
+            JOptionPane.showMessageDialog(null, "Please select date.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+
+        } else if (hospitalId == null) {
+            JOptionPane.showMessageDialog(null, "Please select hospital.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+
+        } else if (typeId == null) {
+            JOptionPane.showMessageDialog(null, "Please select doctor type.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+
+        } else if (doctorId == null) {
+            JOptionPane.showMessageDialog(null, "Please select doctor.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+
+        } else if (timeSlotId == null) {
+            JOptionPane.showMessageDialog(null, "Please select timeslot.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+
+        } else {
+
+            super.saveAppointment(patientNIC, hospitalId, doctorId, typeId, timeSlotId, date, notes);
+        }
+
+    }
+}
 
 public class AddNewAppointment extends javax.swing.JFrame {
 
@@ -133,7 +274,7 @@ public class AddNewAppointment extends javax.swing.JFrame {
                 return;
             }
 
-            int availability = 1; // or dynamic if needed
+            int availability = 1;
 
             String query = "SELECT ts.id, ts.time "
                     + "FROM staff s "
@@ -289,6 +430,11 @@ public class AddNewAppointment extends javax.swing.JFrame {
         jButton1.setFont(new java.awt.Font("Bahnschrift", 1, 14)); // NOI18N
         jButton1.setForeground(new java.awt.Color(239, 239, 236));
         jButton1.setText("Add Apointment");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jLabel14.setBackground(new java.awt.Color(33, 52, 72));
         jLabel14.setFont(new java.awt.Font("Bahnschrift", 0, 14)); // NOI18N
@@ -498,6 +644,67 @@ public class AddNewAppointment extends javax.swing.JFrame {
         // TODO add your handling code here:
         loadTimeSlot();
     }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        try {
+            String patientNIC = jTextField2.getText();
+            String hospital = jComboBox1.getSelectedItem().toString();
+            String type = jComboBox4.getSelectedItem().toString();
+            String doctor = jComboBox2.getSelectedItem().toString();
+            String timeSlot = jComboBox3.getSelectedItem().toString();
+            Date date = jDateChooser1.getDate();
+            String notes = jTextArea1.getText();
+
+            if (date == null) {
+                JOptionPane.showMessageDialog(this, "Please enter appointment details.",
+                        "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            } else if (hospital.equals("Select")) {
+                JOptionPane.showMessageDialog(this, "Please enter appointment details.",
+                        "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            } else if (type.equals("Select")) {
+                JOptionPane.showMessageDialog(this, "Please enter appointment details.",
+                        "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            } else if (doctor.equals("Select")) {
+                JOptionPane.showMessageDialog(this, "Please enter appointment details.",
+                        "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            } else if (timeSlot.equals("Select")) {
+                JOptionPane.showMessageDialog(this, "Please enter appointment details.",
+                        "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            } else {
+
+                String hospitalId = hospitalMap.get(hospital);
+                String doctorId = DoctorMap.get(doctor);
+                String typeId = DoctorTypeMap.get(type);
+                String timeSlotId = TimeSlotMap.get(timeSlot);
+
+                AppointmentSaver saver = new BasicAppointmentSaver();
+                saver = new ValidationAppointmentSaver(saver);
+                saver = new LoggingAppointmentSaver(saver);
+
+                saver.saveAppointment(patientNIC, hospitalId, doctorId, typeId, timeSlotId, date, notes);
+
+                JOptionPane.showMessageDialog(this, "Appointment Added Successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                this.dispose();
+
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error while saving appointment: " + e.getMessage());
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;

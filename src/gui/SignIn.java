@@ -1,9 +1,7 @@
 package gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import java.awt.Component;
 import java.sql.ResultSet;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import model.MySQL;
 import model.UserBean;
