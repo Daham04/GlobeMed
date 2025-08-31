@@ -1,0 +1,15 @@
+gui.ValidationAppointmentSaver
+gui.AddNewAppointment$8
+gui.AddNewAppointment$7
+gui.AddNewAppointment$9
+gui.BasicAppointmentSaver
+gui.AppointmentSaverDecorator
+gui.AddNewAppointment
+gui.AppointmentSaver
+gui.LoggingAppointmentSaver
+gui.AddNewAppointment$4
+gui.AddNewAppointment$3
+gui.AddNewAppointment$6
+gui.AddNewAppointment$5
+gui.AddNewAppointment$2
+gui.AddNewAppointment$1

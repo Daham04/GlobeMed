@@ -12,29 +12,68 @@ import javax.swing.table.TableRowSorter;
 import model.MySQL;
 import model.UserBean;
 
-interface PatientLoader {
+// --- Implementor interface ---
+interface PatientDataImplementor {
 
-    void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines);
+    ResultSet fetchPatientData() throws Exception;
 }
 
-class BasicPatientLoader implements PatientLoader {
+// --- Concrete Implementor ---
+class MySQLPatientData implements PatientDataImplementor {
+
+    @Override
+    public ResultSet fetchPatientData() throws Exception {
+        return MySQL.execute(
+                "SELECT p.patient_nic, p.first_name, p.last_name, p.mobile, p.age, "
+                + "p.addres_line1, p.address_line2, g.gender, "
+                + "m.medicine, mh.date AS medicine_date, "
+                + "s.surgery, ps.date AS surgery_date "
+                + "FROM patient p "
+                + "INNER JOIN gender g ON p.gender_id = g.id "
+                + "LEFT JOIN patient_has_medicine pm ON pm.patient_patient_nic = p.patient_nic "
+                + "LEFT JOIN medicine m ON m.id = pm.medicine_id "
+                + "LEFT JOIN medicine_history mh ON mh.id = pm.medicine_history_id "
+                + "LEFT JOIN patient_has_surgery ps ON ps.patient_patient_nic = p.patient_nic "
+                + "LEFT JOIN surgery s ON s.id = ps.surgery_id"
+        );
+    }
+}
+
+// --- Abstraction ---
+abstract class PatientRecord {
+
+    protected PatientDataImplementor implementor;
+
+    public PatientRecord(PatientDataImplementor implementor) {
+        this.implementor = implementor;
+    }
+
+    public abstract void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines);
+}
+
+// --- Refined Abstraction for security ---
+class SecurePatientRecord extends PatientRecord {
+
+    protected String userRole;
+
+    public SecurePatientRecord(PatientDataImplementor implementor, String userRole) {
+        super(implementor);
+        this.userRole = userRole;
+    }
+
+    protected boolean isAuthorized() {
+        return "Doctor".equalsIgnoreCase(userRole) || "Nurse".equalsIgnoreCase(userRole);
+    }
 
     @Override
     public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
+        if (!isAuthorized()) {
+            JOptionPane.showMessageDialog(null, "Access Denied: You are not authorized to view patient data.");
+            return;
+        }
+
         try {
-            ResultSet patientSet = MySQL.execute(
-                    "SELECT p.patient_nic, p.first_name, p.last_name, p.mobile, p.age, "
-                    + "p.addres_line1, p.address_line2, g.gender, "
-                    + "m.medicine, mh.date AS medicine_date, "
-                    + "s.surgery, ps.date AS surgery_date "
-                    + "FROM patient p "
-                    + "INNER JOIN gender g ON p.gender_id = g.id "
-                    + "LEFT JOIN patient_has_medicine pm ON pm.patient_patient_nic = p.patient_nic "
-                    + "LEFT JOIN medicine m ON m.id = pm.medicine_id "
-                    + "LEFT JOIN medicine_history mh ON mh.id = pm.medicine_history_id "
-                    + "LEFT JOIN patient_has_surgery ps ON ps.patient_patient_nic = p.patient_nic "
-                    + "LEFT JOIN surgery s ON s.id = ps.surgery_id"
-            );
+            ResultSet patientSet = implementor.fetchPatientData();
 
             DefaultTableModel model1 = (DefaultTableModel) tablePatients.getModel();
             model1.setRowCount(0);
@@ -51,142 +90,147 @@ class BasicPatientLoader implements PatientLoader {
 
             while (patientSet.next()) {
                 String patientNIC = patientSet.getString("p.patient_nic");
-                String patientName = patientSet.getString("p.first_name") + " " + patientSet.getString("p.last_name");
-                String patientGender = patientSet.getString("g.gender");
-                String patientMobile = patientSet.getString("p.mobile");
-                String patientAge = patientSet.getString("p.age");
-                String patientAd1 = patientSet.getString("p.addres_line1");
-                String patientAd2 = patientSet.getString("p.address_line2");
-
-                String medicineName = patientSet.getString("m.medicine");
-                String medicineDate = patientSet.getString("medicine_date");
-
-                String surgeryName = patientSet.getString("s.surgery");
-                String surgeryDate = patientSet.getString("surgery_date");
 
                 // --- Patient Table ---
                 if (!addedPatients.contains(patientNIC)) {
                     var vector1 = new Vector<>();
                     vector1.add(patientNIC);
-                    vector1.add(patientName);
-                    vector1.add(patientGender);
-                    vector1.add(patientMobile);
-                    vector1.add(patientAge);
-                    vector1.add(patientAd1);
-                    vector1.add(patientAd2);
-
+                    vector1.add(patientSet.getString("p.first_name") + " " + patientSet.getString("p.last_name"));
+                    vector1.add(patientSet.getString("g.gender"));
+                    vector1.add(patientSet.getString("p.mobile"));
+                    vector1.add(patientSet.getString("p.age"));
+                    vector1.add(patientSet.getString("p.addres_line1"));
+                    vector1.add(patientSet.getString("p.address_line2"));
                     model1.addRow(vector1);
                     addedPatients.add(patientNIC);
                 }
 
-                // --- Surgery Table (use N/A if no surgery) ---
-                String sName = (surgeryName != null) ? surgeryName : "N/A";
-                String sDate = (surgeryDate != null) ? surgeryDate : "N/A";
+                // --- Surgery Table ---
+                String sName = patientSet.getString("s.surgery") != null ? patientSet.getString("s.surgery") : "N/A";
+                String sDate = patientSet.getString("surgery_date") != null ? patientSet.getString("surgery_date") : "N/A";
                 String surgeryKey = patientNIC + "-" + sName + "-" + sDate;
-
                 if (!addedSurgeries.contains(surgeryKey)) {
                     var vector2 = new Vector<>();
                     vector2.add(patientNIC);
                     vector2.add(sName);
                     vector2.add(sDate);
-
                     model2.addRow(vector2);
                     addedSurgeries.add(surgeryKey);
                 }
 
-                // --- Medicine Table (use N/A if no medicine) ---
-                String mName = (medicineName != null) ? medicineName : "N/A";
-                String mDate = (medicineDate != null) ? medicineDate : "N/A";
+                // --- Medicine Table ---
+                String mName = patientSet.getString("m.medicine") != null ? patientSet.getString("m.medicine") : "N/A";
+                String mDate = patientSet.getString("medicine_date") != null ? patientSet.getString("medicine_date") : "N/A";
                 String medicineKey = patientNIC + "-" + mName + "-" + mDate;
-
                 if (!addedMedicines.contains(medicineKey)) {
                     var vector3 = new Vector<>();
                     vector3.add(patientNIC);
                     vector3.add(mName);
                     vector3.add(mDate);
+                    model3.addRow(vector3);
+                    addedMedicines.add(medicineKey);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
 
+class SearchablePatientRecord extends SecurePatientRecord {
+
+    public SearchablePatientRecord(PatientDataImplementor implementor, String userRole) {
+        super(implementor, userRole);
+    }
+
+    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines, String patientNIC) {
+        if (!isAuthorized()) {
+            JOptionPane.showMessageDialog(null, "Access Denied: You are not authorized to view patient data.");
+            return;
+        }
+
+        try {
+            // Fetch all data
+            ResultSet patientSet = implementor.fetchPatientData();
+
+            DefaultTableModel model1 = (DefaultTableModel) tablePatients.getModel();
+            DefaultTableModel model2 = (DefaultTableModel) tableSurgeries.getModel();
+            DefaultTableModel model3 = (DefaultTableModel) tableMedicines.getModel();
+
+            model1.setRowCount(0);
+            model2.setRowCount(0);
+            model3.setRowCount(0);
+
+            Set<String> addedPatients = new HashSet<>();
+            Set<String> addedSurgeries = new HashSet<>();
+            Set<String> addedMedicines = new HashSet<>();
+
+            while (patientSet.next()) {
+                String nicValue = patientSet.getString("p.patient_nic");
+
+                // --- Patient Table ---
+                if (!addedPatients.contains(nicValue)) {
+                    Vector<Object> vector1 = new Vector<>();
+                    vector1.add(nicValue);
+                    vector1.add(patientSet.getString("p.first_name") + " " + patientSet.getString("p.last_name"));
+                    vector1.add(patientSet.getString("g.gender"));
+                    vector1.add(patientSet.getString("p.mobile"));
+                    vector1.add(patientSet.getString("p.age"));
+                    vector1.add(patientSet.getString("p.addres_line1"));
+                    vector1.add(patientSet.getString("p.address_line2"));
+                    model1.addRow(vector1);
+                    addedPatients.add(nicValue);
+                }
+
+                // --- Surgery Table ---
+                String sName = patientSet.getString("s.surgery") != null ? patientSet.getString("s.surgery") : "N/A";
+                String sDate = patientSet.getString("surgery_date") != null ? patientSet.getString("surgery_date") : "N/A";
+                String surgeryKey = nicValue + "-" + sName + "-" + sDate;
+                if (!addedSurgeries.contains(surgeryKey)) {
+                    Vector<Object> vector2 = new Vector<>();
+                    vector2.add(nicValue);
+                    vector2.add(sName);
+                    vector2.add(sDate);
+                    model2.addRow(vector2);
+                    addedSurgeries.add(surgeryKey);
+                }
+
+                // --- Medicine Table ---
+                String mName = patientSet.getString("m.medicine") != null ? patientSet.getString("m.medicine") : "N/A";
+                String mDate = patientSet.getString("medicine_date") != null ? patientSet.getString("medicine_date") : "N/A";
+                String medicineKey = nicValue + "-" + mName + "-" + mDate;
+                if (!addedMedicines.contains(medicineKey)) {
+                    Vector<Object> vector3 = new Vector<>();
+                    vector3.add(nicValue);
+                    vector3.add(mName);
+                    vector3.add(mDate);
                     model3.addRow(vector3);
                     addedMedicines.add(medicineKey);
                 }
             }
 
+            // --- Apply RowSorter for filtering
+            TableRowSorter<DefaultTableModel> sorter1 = new TableRowSorter<>(model1);
+            TableRowSorter<DefaultTableModel> sorter2 = new TableRowSorter<>(model2);
+            TableRowSorter<DefaultTableModel> sorter3 = new TableRowSorter<>(model3);
+
+            tablePatients.setRowSorter(sorter1);
+            tableSurgeries.setRowSorter(sorter2);
+            tableMedicines.setRowSorter(sorter3);
+
+            if (patientNIC != null && !patientNIC.isEmpty()) {
+                sorter1.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
+                sorter2.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
+                sorter3.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
+            } else {
+                // No NIC: show all data
+                sorter1.setRowFilter(null);
+                sorter2.setRowFilter(null);
+                sorter3.setRowFilter(null);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-}
-
-abstract class PatientLoaderDecorator implements PatientLoader {
-
-    protected PatientLoader decoratedLoader;
-
-    public PatientLoaderDecorator(PatientLoader loader) {
-        this.decoratedLoader = loader;
-    }
-
-    @Override
-    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
-        decoratedLoader.loadPatients(tablePatients, tableSurgeries, tableMedicines);
-    }
-}
-
-class SecurityPatientLoader extends PatientLoaderDecorator {
-
-    private String userRole;
-
-    public SecurityPatientLoader(PatientLoader loader, String userRole) {
-        super(loader);
-        this.userRole = userRole;
-    }
-
-    @Override
-    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
-        if (!isAuthorized()) {
-            JOptionPane.showMessageDialog(null, "Access Denied: You are not authorized to view patient data.");
-            return;
-        }
-        super.loadPatients(tablePatients, tableSurgeries, tableMedicines);
-    }
-
-    private boolean isAuthorized() {
-        return userRole.equalsIgnoreCase("Doctor") || userRole.equalsIgnoreCase("Nurse");
-    }
-}
-
-class SearchPatientLoader extends PatientLoaderDecorator {
-
-    private String patientNIC;
-
-    public SearchPatientLoader(PatientLoader loader, String patientNIC) {
-        super(loader);
-        this.patientNIC = patientNIC;
-    }
-
-    @Override
-    public void loadPatients(JTable tablePatients, JTable tableSurgeries, JTable tableMedicines) {
-        super.loadPatients(tablePatients, tableSurgeries, tableMedicines);
-
-        DefaultTableModel model1 = (DefaultTableModel) tablePatients.getModel();
-        TableRowSorter<DefaultTableModel> sorter1 = new TableRowSorter<>(model1);
-        tablePatients.setRowSorter(sorter1);
-
-        DefaultTableModel model2 = (DefaultTableModel) tableSurgeries.getModel();
-        TableRowSorter<DefaultTableModel> sorter2 = new TableRowSorter<>(model2);
-        tableSurgeries.setRowSorter(sorter2);
-
-        DefaultTableModel model3 = (DefaultTableModel) tableMedicines.getModel();
-        TableRowSorter<DefaultTableModel> sorter3 = new TableRowSorter<>(model3);
-        tableMedicines.setRowSorter(sorter3);
-
-        if (patientNIC == null || patientNIC.isEmpty()) {
-            sorter1.setRowFilter(null);
-            sorter2.setRowFilter(null);
-            sorter3.setRowFilter(null);
-        } else {
-            sorter1.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
-            sorter2.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
-            sorter3.setRowFilter(RowFilter.regexFilter("(?i)" + patientNIC, 0));
         }
     }
 }
@@ -205,11 +249,11 @@ public class PatientPanel extends javax.swing.JPanel {
 
         String currentUserRole = userBean.getUserRole();
 
-        PatientLoader loader = new BasicPatientLoader();
+        // Bridge connection
+        PatientDataImplementor implementor = new MySQLPatientData();
+        PatientRecord record = new SecurePatientRecord(implementor, currentUserRole);
 
-        SecurityPatientLoader loader1 = new SecurityPatientLoader(loader, currentUserRole);
-
-        loader1.loadPatients(jTable1, jTable2, jTable3);
+        record.loadPatients(jTable1, jTable2, jTable3);
 
     }
 
@@ -483,24 +527,17 @@ public class PatientPanel extends javax.swing.JPanel {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         String patientNIC = jTextField1.getText().trim();
-
-        PatientLoader loader = new BasicPatientLoader();
-
-        loader = new SecurityPatientLoader(loader, userBean.getUserRole());
-
-        loader = new SearchPatientLoader(loader, patientNIC);
-
-        loader.loadPatients(jTable1, jTable2, jTable3);
+        PatientDataImplementor implementor = new MySQLPatientData();
+        SearchablePatientRecord record = new SearchablePatientRecord(implementor, userBean.getUserRole());
+        record.loadPatients(jTable1, jTable2, jTable3, patientNIC);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
         String patientNIC = jTextField1.getText().trim();
 
-        PatientLoader loader = new BasicPatientLoader();
-        loader = new SecurityPatientLoader(loader, userBean.getUserRole());
-        loader = new SearchPatientLoader(loader, patientNIC);
-
-        loader.loadPatients(jTable1, jTable2, jTable3);
+        PatientDataImplementor implementor = new MySQLPatientData();
+        SearchablePatientRecord record = new SearchablePatientRecord(implementor, userBean.getUserRole());
+        record.loadPatients(jTable1, jTable2, jTable3, patientNIC);
     }//GEN-LAST:event_jTextField1KeyReleased
 
 

@@ -11,133 +11,30 @@ import javax.swing.JOptionPane;
 import model.MySQL;
 import model.Patient;
 
-interface PatientObserver {
+// Implementor
+interface RecordStorage {
 
-    boolean onNewPatient(Patient patient, JFrame parent);
+    boolean save(Patient patient, JFrame parent, HashMap<String, String> genderMap);
 }
 
-class PatientFormSubject {
-
-    private final List<PatientObserver> observers = new ArrayList<>();
-
-    public void addObserver(PatientObserver observer) {
-        observers.add(observer);
-    }
-
-    public boolean notifyNewPatient(Patient patient, JFrame parent) {
-        for (PatientObserver obs : observers) {
-            if (!obs.onNewPatient(patient, parent)) {
-                return false; // stop if one observer fails (e.g. validation)
-            }
-        }
-        return true;
-    }
-}
-
-class NICValidator implements PatientObserver {
+// Concrete Implementor 1 - MySQL
+class MySQLPatientStorage implements RecordStorage {
 
     @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
-        if (patient.getNic() == null || patient.getNic().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "NIC is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-}
-
-class NameValidator implements PatientObserver {
-
-    @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
-        if (patient.getFirstName().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "First Name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
-            return false;
-        } else if (patient.getLastName().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "Last Name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-}
-
-class AgeValidator implements PatientObserver {
-
-    @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
-        String ageStr = String.valueOf(patient.getAge());
-
-        if (ageStr == null || ageStr.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(parent,
-                    "Age field cannot be empty.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-}
-
-class GenderValidator implements PatientObserver {
-
-    @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
-        String gender = patient.getGender();
-
-        if (gender == null || gender.trim().isEmpty() || gender.equals("Select")) {
-            JOptionPane.showMessageDialog(parent,
-                    "Please select a valid Gender.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-}
-
-
-class AddressValidator implements PatientObserver {
-
-    @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
-        String address1 = patient.getAddressLine1();
-        if (address1 == null || address1.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(parent,
-                    "Address Line 1 is required.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-}
-
-class PatientInsertObserver implements PatientObserver {
-
-    private final AddPatientPanel panel;
-
-    public PatientInsertObserver(AddPatientPanel panel) {
-        this.panel = panel;
-    }
-
-    @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
+    public boolean save(Patient patient, JFrame parent, HashMap<String, String> genderMap) {
         try {
             MySQL.execute("INSERT INTO `patient` "
-                    + "(`patient_nic`, `first_name`, `last_name`, `mobile`, `age`, `addres_line1`, `address_line2`,`gender_id`) "
+                    + "(`patient_nic`, `first_name`, `last_name`, `mobile`, `age`, "
+                    + "`addres_line1`, `address_line2`,`gender_id`) "
                     + "VALUES ('" + patient.getNic() + "', '" + patient.getFirstName() + "', '"
                     + patient.getLastName() + "', '" + patient.getMobile() + "', " + patient.getAge()
                     + ", '" + patient.getAddressLine1() + "', '" + patient.getAddressLine2()
-                    + "', '" + panel.genderMap.get(patient.getGender()) + "')");
+                    + "', '" + genderMap.get(patient.getGender()) + "')");
 
             JOptionPane.showMessageDialog(parent,
                     "Patient added successfully!",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
-
-            if (parent instanceof AddPatientPanel) {
-                ((AddPatientPanel) parent).resetForm();
-            }
 
             return true;
 
@@ -151,36 +48,51 @@ class PatientInsertObserver implements PatientObserver {
     }
 }
 
-class MobileValidator implements PatientObserver {
+// Abstraction
+abstract class PatientRecordAccess {
+
+    protected RecordStorage storage;
+
+    public PatientRecordAccess(RecordStorage storage) {
+        this.storage = storage;
+    }
+
+    public abstract boolean addPatient(Patient patient, JFrame parent, HashMap<String, String> genderMap);
+}
+
+// Refined Abstraction
+class SecurePatientRecordAccess extends PatientRecordAccess {
+
+    public SecurePatientRecordAccess(RecordStorage storage) {
+        super(storage);
+    }
 
     @Override
-    public boolean onNewPatient(Patient patient, JFrame parent) {
-        String mobile = patient.getMobile();
-
-        if (mobile == null || mobile.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(parent,
-                    "Mobile number cannot be empty.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
+    public boolean addPatient(Patient patient, JFrame parent, HashMap<String, String> genderMap) {
+        // Validation logic here
+        if (patient.getNic() == null || patient.getNic().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(parent, "NIC is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (patient.getFirstName() == null || patient.getFirstName().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(parent, "First Name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (patient.getLastName() == null || patient.getLastName().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(parent, "Last Name is required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (patient.getMobile() == null || !patient.getMobile().matches("\\d{10}")) {
+            JOptionPane.showMessageDialog(parent, "Invalid Mobile Number!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (patient.getGender() == null || patient.getGender().equals("Select")) {
+            JOptionPane.showMessageDialog(parent, "Please select a valid Gender.", "Validation Error", JOptionPane.WARNING_MESSAGE);
             return false;
         }
 
-        if (!mobile.matches("\\d+")) {
-            JOptionPane.showMessageDialog(parent,
-                    "Mobile number must contain only digits.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-
-        if (mobile.length() != 10) {
-            JOptionPane.showMessageDialog(parent,
-                    "Mobile number must be 10 digits.",
-                    "Validation Error",
-                    JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
+        // Delegate to Implementor
+        return storage.save(patient, parent, genderMap);
     }
 }
 
@@ -501,24 +413,16 @@ public class AddPatientPanel extends javax.swing.JFrame {
             age = Integer.parseInt(jTextField6.getText().trim());
         } catch (Exception ignored) {
         }
-
         String address1 = jTextField7.getText().trim();
         String address2 = jTextField9.getText().trim();
 
         Patient patient = new Patient(nic, firstName, lastName, gender, mobile, age, address1, address2);
 
-        PatientFormSubject subject = new PatientFormSubject();
+        // Use Bridge Pattern
+        RecordStorage storage = new MySQLPatientStorage();
+        PatientRecordAccess recordAccess = new SecurePatientRecordAccess(storage);
 
-        subject.addObserver(new NICValidator());
-        subject.addObserver(new NameValidator());
-        subject.addObserver(new GenderValidator());
-        subject.addObserver(new MobileValidator());
-        subject.addObserver(new AgeValidator());
-        subject.addObserver(new AddressValidator());
-
-        subject.addObserver(new PatientInsertObserver(this));
-
-        if (subject.notifyNewPatient(patient, this)) {
+        if (recordAccess.addPatient(patient, this, genderMap)) {
             this.dispose();
             JFrame frame = new AddNewAppointment(nic);
             frame.setVisible(true);

@@ -111,6 +111,12 @@ public class DashboardPanel extends javax.swing.JPanel {
         setBackground(new java.awt.Color(239, 239, 236));
         setPreferredSize(new java.awt.Dimension(1058, 685));
 
+        jScrollPane1.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jScrollPane1KeyPressed(evt);
+            }
+        });
+
         jTable1.setBackground(new java.awt.Color(239, 239, 236));
         jTable1.setFont(new java.awt.Font("Bahnschrift", 0, 12)); // NOI18N
         jTable1.setForeground(new java.awt.Color(33, 52, 72));
@@ -134,6 +140,11 @@ public class DashboardPanel extends javax.swing.JPanel {
             }
         });
         jTable1.setGridColor(new java.awt.Color(239, 239, 236));
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTable1MouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(jTable1);
 
         kGradientPanel2.setToolTipText("Product Management");
@@ -314,7 +325,7 @@ public class DashboardPanel extends javax.swing.JPanel {
                 .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 564, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 126, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(219, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -348,8 +359,8 @@ public class DashboardPanel extends javax.swing.JPanel {
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 431, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 382, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -359,20 +370,43 @@ public class DashboardPanel extends javax.swing.JPanel {
 
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         for (int i = 0; i < model.getRowCount(); i++) {
-            String tableAppID = model.getValueAt(i, 0).toString(); 
+            String tableAppID = model.getValueAt(i, 0).toString();
             if (tableAppID.equals(appID)) {
-                jTable1.setRowSelectionInterval(i, i); 
+                jTable1.setRowSelectionInterval(i, i);
                 jTable1.scrollRectToVisible(jTable1.getCellRect(i, 0, true));
                 return;
             }
         }
 
-        JOptionPane.showMessageDialog(this, "Appointment ID not found.","Warning",JOptionPane.WARNING_MESSAGE);
+        JOptionPane.showMessageDialog(this, "Appointment ID not found.", "Warning", JOptionPane.WARNING_MESSAGE);
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private String appointmentID;
+    private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
+        if (evt.getClickCount() == 2) { // Check for double-click
+            int selectedRow = jTable1.getSelectedRow();
+
+            if (selectedRow != -1) { // Ensure a row is selected
+                // Assuming Appointment ID is in column 0
+                appointmentID = jTable1.getValueAt(selectedRow, 0).toString();
+                String patientNic = jTable1.getValueAt(selectedRow, 1).toString();
+
+                AssignMedicine medicine = new AssignMedicine(appointmentID,patientNic,userBean);
+                medicine.setVisible(true);
+
+                System.out.println("Double-clicked Appointment ID: " + appointmentID);
+            }
+        }
+
+    }//GEN-LAST:event_jTable1MouseClicked
+
+    private void jScrollPane1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jScrollPane1KeyPressed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jScrollPane1KeyPressed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

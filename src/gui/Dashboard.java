@@ -526,10 +526,12 @@ public class Dashboard extends javax.swing.JFrame {
 
     private void jToggleButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton7ActionPerformed
         // TODO add your handling code here:
+        changePanel(new ReportsPanel());
     }//GEN-LAST:event_jToggleButton7ActionPerformed
 
     private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton8ActionPerformed
         // TODO add your handling code here:
+        changePanel(new BIllingPanel());
     }//GEN-LAST:event_jToggleButton8ActionPerformed
 
     public static void main(String args[]) {
